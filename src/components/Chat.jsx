@@ -1,16 +1,47 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import ScrollToBottom from "react-scroll-to-bottom";
+import { MdAttachFile } from "react-icons/md";
+import { IoIosSend } from "react-icons/io";
+import { storage } from "../firebase";
+import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
 
 function Chat({ socket, username, room }) {
   const [currentMessage, setCurrentMessage] = useState("");
+  const [Url, setUrl] = useState("");
   const [messageList, setMessageList] = useState([]);
+  const [uploadImage, setUploadImage] = useState(null);
+
+  const hiddenFileInput = useRef(null);
+
+  const handleClick = () => {
+    hiddenFileInput.current.click();
+  };
+
+  const handleUpload = () => {
+    if (uploadImage == null) return;
+    const imageRef = ref(storage, `images/${uploadImage.name}`);
+    uploadBytes(imageRef, uploadImage).then((snapshot) => {
+      getDownloadURL(snapshot.ref).then((url) => {
+        setUrl(url);
+      });
+    });
+  };
 
   const sendMessage = async () => {
-    if (currentMessage !== "") {
+    let messageContent = currentMessage;
+    let imageUrl = Url;
+
+    if (Url) {
+      messageContent += ` ${Url}`;
+      imageUrl = "";
+    }
+
+    if (messageContent.trim() !== "") {
       const messageData = {
         room: room,
         author: username,
-        message: currentMessage,
+        url: imageUrl,
+        message: messageContent,
         time:
           new Date(Date.now()).getHours() +
           ":" +
@@ -20,14 +51,25 @@ function Chat({ socket, username, room }) {
       await socket.emit("send_message", messageData);
       setMessageList((list) => [...list, messageData]);
       setCurrentMessage("");
+      setUrl("");
     }
   };
 
   useEffect(() => {
     socket.on("receive_message", (data) => {
+      console.log("datadatadata", data);
       setMessageList((list) => [...list, data]);
     });
   }, [socket]);
+
+  function Functions() {
+    sendMessage();
+  }
+
+  useEffect(() => {
+    handleUpload();
+  }, [uploadImage]);
+  console.log(Url);
 
   return (
     <div className="chat-window">
@@ -36,9 +78,10 @@ function Chat({ socket, username, room }) {
       </div>
       <div className="chat-body">
         <ScrollToBottom className="message-container">
-          {messageList.map((messageContent) => {
+          {messageList.map((messageContent, index) => {
             return (
               <div
+                key={index}
                 className="message"
                 id={username === messageContent.author ? "you" : "other"}
               >
@@ -68,7 +111,18 @@ function Chat({ socket, username, room }) {
             event.key === "Enter" && sendMessage();
           }}
         />
-        <button onClick={sendMessage}>&#9658;</button>
+        <div className="buttons">
+          <input
+            type="file"
+            ref={hiddenFileInput}
+            onChange={(e) => {
+              setUploadImage(e.target.files[0]);
+            }}
+            style={{ display: "none" }}
+          />
+          <MdAttachFile size="medium" onClick={handleClick} />
+          <IoIosSend size="medium" onClick={Functions} />
+        </div>
       </div>
     </div>
   );
