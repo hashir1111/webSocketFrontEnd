@@ -194,3 +194,8 @@ body {
   display: flex;
   justify-content: flex-start;
 }
+
+.image{
+  width: 200px;
+  height: 200px;
+}

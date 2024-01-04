@@ -40,7 +40,7 @@ function Chat({ socket, username, room }) {
       const messageData = {
         room: room,
         author: username,
-        url: imageUrl,
+        url: Url,
         message: messageContent,
         time:
           new Date(Date.now()).getHours() +
@@ -69,7 +69,6 @@ function Chat({ socket, username, room }) {
   useEffect(() => {
     handleUpload();
   }, [uploadImage]);
-  console.log(Url);
 
   return (
     <div className="chat-window">
@@ -79,6 +78,7 @@ function Chat({ socket, username, room }) {
       <div className="chat-body">
         <ScrollToBottom className="message-container">
           {messageList.map((messageContent, index) => {
+            console.log(messageContent);
             return (
               <div
                 key={index}
@@ -87,7 +87,13 @@ function Chat({ socket, username, room }) {
               >
                 <div>
                   <div className="message-content">
-                    <p>{messageContent.message}</p>
+                    {messageContent.url != "" ? (
+                      <>
+                        <img className="image" src={messageContent.url} />
+                      </>
+                    ) : (
+                      <p>{messageContent.message}</p>
+                    )}
                   </div>
                   <div className="message-meta">
                     <p id="time">{messageContent.time}</p>
