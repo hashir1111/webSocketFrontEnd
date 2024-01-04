@@ -23,6 +23,7 @@ function Chat({ socket, username, room }) {
     uploadBytes(imageRef, uploadImage).then((snapshot) => {
       getDownloadURL(snapshot.ref).then((url) => {
         setUrl(url);
+        alert("image uploaded")
       });
     });
   };
@@ -86,13 +87,15 @@ function Chat({ socket, username, room }) {
                 id={username === messageContent.author ? "you" : "other"}
               >
                 <div>
-                  <div className="message-content">
-                    {messageContent.url != "" ? (
+                  <div>
+                    {messageContent.url !== "" ? (
                       <>
                         <img className="image" src={messageContent.url} />
                       </>
                     ) : (
-                      <p>{messageContent.message}</p>
+                      <div className="message-content">
+                        <p>{messageContent.message}</p>
+                      </div>
                     )}
                   </div>
                   <div className="message-meta">
