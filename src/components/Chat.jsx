@@ -8,6 +8,7 @@ import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
 function Chat({ socket, username, room }) {
   const [currentMessage, setCurrentMessage] = useState("");
   const [Url, setUrl] = useState("");
+  const [vidUrl, setVidUrl] = useState("");
   const [messageList, setMessageList] = useState([]);
   const [uploadImage, setUploadImage] = useState(null);
 
@@ -22,19 +23,44 @@ function Chat({ socket, username, room }) {
     const imageRef = ref(storage, `images/${uploadImage.name}`);
     uploadBytes(imageRef, uploadImage).then((snapshot) => {
       getDownloadURL(snapshot.ref).then((url) => {
-        setUrl(url);
-        alert("image uploaded")
+        checkMediaType(url);
       });
     });
   };
 
+  function checkMediaType(link) {
+    const path = new URL(link).pathname;
+
+    const fileExtension = path.split(".").pop().toLowerCase();
+
+    if (
+      ["mp4", "avi", "mkv", "mov", "webm", "flv", "avchd", "wmv"].includes(
+        fileExtension
+      )
+    ) {
+      setVidUrl(link);
+    } else if (["jpg", "jpeg", "png", "gif"].includes(fileExtension)) {
+      setUrl(link);
+    } else {
+      console.log(
+        "The provided link does not have a recognized video or image extension."
+      );
+    }
+  }
+
   const sendMessage = async () => {
     let messageContent = currentMessage;
     let imageUrl = Url;
+    let videoUrl = vidUrl;
 
     if (Url) {
       messageContent += ` ${Url}`;
       imageUrl = "";
+    }
+
+    if (vidUrl) {
+      messageContent += ` ${vidUrl}`;
+      videoUrl = "";
     }
 
     if (messageContent.trim() !== "") {
@@ -42,6 +68,7 @@ function Chat({ socket, username, room }) {
         room: room,
         author: username,
         url: Url,
+        video: vidUrl,
         message: messageContent,
         time:
           new Date(Date.now()).getHours() +
@@ -53,6 +80,7 @@ function Chat({ socket, username, room }) {
       setMessageList((list) => [...list, messageData]);
       setCurrentMessage("");
       setUrl("");
+      setVidUrl("");
     }
   };
 
@@ -89,9 +117,13 @@ function Chat({ socket, username, room }) {
                 <div>
                   <div>
                     {messageContent.url !== "" ? (
-                      <>
-                        <img className="image" src={messageContent.url} />
-                      </>
+                      <img className="image" src={messageContent.url} />
+                    ) : messageContent.video !== "" ? (
+                      <video
+                        className="video"
+                        src={messageContent.video}
+                        controls
+                      />
                     ) : (
                       <div className="message-content">
                         <p>{messageContent.message}</p>
