@@ -27,6 +27,29 @@ function Chat({ socket, username, room }) {
       });
     });
   };
+  function encryptMessage(msg, key) {
+    let cipher = "";
+    let k_indx = 0;
+    let msg_len = msg.length;
+    let msg_lst = msg.split("");
+    let key_lst = key.split("").sort();
+    let col = key.length;
+    let row = Math.ceil(msg_len / col);
+    let fill_null = (row * col) - msg_len;
+    msg_lst = msg_lst.concat('_'.repeat(fill_null).split(""));
+    let matrix = [];
+    for (let i = 0; i < msg_lst.length; i += col) {
+        matrix.push(msg_lst.slice(i, i + col));
+    }
+
+    for (let _ = 0; _ < col; _++) {
+        let curr_idx = key.indexOf(key_lst[k_indx]);
+        cipher += matrix.map(row => row[curr_idx]).join("");
+        k_indx++;
+    }
+
+    return cipher;
+}
 
   function checkMediaType(link) {
     const path = new URL(link).pathname;
@@ -64,12 +87,35 @@ function Chat({ socket, username, room }) {
     }
 
     if (messageContent.trim() !== "") {
+
+      const options = {
+        method : "POST",
+        header : {
+          'Content-Type' : 'application/json'
+        },
+        body: JSON.stringify({
+          roomID : room,
+          User: username,
+          message: encryptMessage(messageContent,room),
+          time:
+          new Date(Date.now()).getHours() +
+          ":" +
+          new Date(Date.now()).getMinutes(),
+        })
+      }
+      const res = fetch("https://image-upload-44c1d-default-rtdb.firebaseio.com/messages.json", options);
+      if(res){
+        console.log("Success")
+      } else {
+        console.log("Error!")
+      }
       const messageData = {
         room: room,
         author: username,
         url: Url,
         video: vidUrl,
         message: messageContent,
+        encryptedmsg: encryptMessage(messageContent,room),
         time:
           new Date(Date.now()).getHours() +
           ":" +
